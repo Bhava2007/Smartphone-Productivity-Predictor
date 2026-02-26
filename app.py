@@ -7,10 +7,11 @@ st.set_page_config(page_title="Productivity Predictor", page_icon="📱")
 
 st.title("📱 Smartphone Usage Productivity Predictor")
 
-df = pd.read_csv("Smartphone_Usage_Productivity_Dataset_50000.csv")
+@st.cache_data
+def load_data():
+    return pd.read_csv("Smartphone_Usage_Productivity_Dataset_50000.csv")
 
-st.subheader("Dataset Preview")
-st.write(df.head())
+df = load_data()
 
 target = df.columns[-1]
 X = df.drop(target, axis=1)
@@ -20,19 +21,23 @@ X = pd.get_dummies(X)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
+@st.cache_resource
+def train_model():
+    model = RandomForestClassifier(n_estimators=50)
+    model.fit(X_train, y_train)
+    return model
+
+model = train_model()
 
 st.sidebar.header("Enter Usage Details")
 
 user_input = {}
 
 for col in X.columns:
-    user_input[col] = st.sidebar.number_input(col, 0.0)
+    user_input[col] = st.sidebar.number_input(col, value=0.0)
 
 input_df = pd.DataFrame([user_input])
 
-prediction = model.predict(input_df)
-
 if st.sidebar.button("Predict"):
+    prediction = model.predict(input_df)
     st.success(f"Predicted Productivity Level: {prediction[0]}")
